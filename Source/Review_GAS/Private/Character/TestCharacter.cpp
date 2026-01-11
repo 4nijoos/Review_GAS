@@ -8,6 +8,8 @@
 #include "GameAbilitySystem/AttributeSet/EnemyAttributeSet.h"
 #include "EnhancedInputComponent.h"
 
+#include "UI/BarWidget.h"
+
 AGasCharacter::AGasCharacter()
 {
 	AbilitySystemComponent = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystemComponent"));
@@ -42,8 +44,28 @@ void AGasCharacter::BeginPlay()
 		}
 
 		// 값 변경 감지 (UI 연결)
+		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UPlayerAttributeSet::GetMaxManaAttribute()).AddUObject(this, &AGasCharacter::OnMaxManaChange);
 		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UPlayerAttributeSet::GetManaAttribute()).AddUObject(this, &AGasCharacter::OnManaChange);
+
 		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UEnemyAttributeSet::GetHealthAttribute()).AddUObject(this, &AGasCharacter::OnHealthChange);
+		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UEnemyAttributeSet::GetMaxHealthAttribute()).AddUObject(this, &AGasCharacter::OnMaxHealthChange);
+		
+		if (HealthWidgetComp)
+		{
+			UBarWidget* EnemyBar = Cast<UBarWidget>(HealthWidgetComp->GetUserWidgetObject());
+			if (EnemyBar && EnemyAttributeSet)
+			{
+				// 시작하자마자 100/100으로 UI 세팅
+				UE_LOG(LogTemp, Warning, TEXT("성공: 적 체력바 위젯을 찾았습니다!"));
+				EnemyBar->UpdateMax_Implementation(EnemyAttributeSet->GetMaxHealth());
+				EnemyBar->UpdateCurrent_Implementation(EnemyAttributeSet->GetHealth());
+			}
+			else
+			{
+				// 이게 뜨면 100% 위젯 부모 클래스 문제입니다.
+				UE_LOG(LogTemp, Error, TEXT("실패: 적 체력바가 UBarWidget이 아닙니다! 부모 클래스를 확인하세요!"));
+			}
+		}
 	}
 }
 
@@ -69,11 +91,59 @@ void AGasCharacter::OnFireballInput()
 
 void AGasCharacter::OnManaChange(const FOnAttributeChangeData& InData)
 {
-	// 블루프린트 위젯 업데이트 로직 (HUD)
+	if (PlayerHUDWidget)
+	{
+		// 정답: 현재값(Current)을 바꿔야 함
+		PlayerHUDWidget->UpdateCurrent_Implementation(InData.NewValue);
+	}
 }
 
+// 플레이어 최대 마나 변경 시
+void AGasCharacter::OnMaxManaChange(const FOnAttributeChangeData& InData)
+{
+	if (PlayerHUDWidget)
+	{
+		PlayerHUDWidget->UpdateMax_Implementation(InData.NewValue);
+	}
+}
+
+//적 체력 변경 시 (Current)
 void AGasCharacter::OnHealthChange(const FOnAttributeChangeData& InData)
 {
 	// 블루프린트 위젯 업데이트 로직 (Enemy HP Bar)
+	if (HealthWidgetComp)
+	{
+		// 위젯 컴포넌트에서 위젯 가져와서 캐스팅
+		UBarWidget* EnemyBar = Cast<UBarWidget>(HealthWidgetComp->GetUserWidgetObject());
+		if (EnemyBar)
+		{
+			EnemyBar->UpdateCurrent_Implementation(InData.NewValue);
+		}
+	}
 }
 
+// 적 체력 최대치 변경 시 (Max)
+void AGasCharacter::OnMaxHealthChange(const FOnAttributeChangeData& InData)
+{
+	if (HealthWidgetComp)
+	{
+		UBarWidget* EnemyBar = Cast<UBarWidget>(HealthWidgetComp->GetUserWidgetObject());
+		if (EnemyBar)
+		{
+			EnemyBar->UpdateMax_Implementation(InData.NewValue);
+		}
+	}
+}
+
+//플레리어 HUD 위젯 설정 함수
+void AGasCharacter::SetHUDWidget(UBarWidget* InWidget)
+{
+	PlayerHUDWidget = InWidget;
+
+	// 위젯이 연결되자마자 현재 마나/최대 마나를 UI에 한번 쏴줍니다.
+	if (PlayerHUDWidget && PlayerAttributeSet)
+	{
+		PlayerHUDWidget->UpdateMax_Implementation(PlayerAttributeSet->GetMaxMana());
+		PlayerHUDWidget->UpdateCurrent_Implementation(PlayerAttributeSet->GetMana());
+	}
+}

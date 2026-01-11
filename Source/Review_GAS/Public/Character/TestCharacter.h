@@ -11,6 +11,7 @@
 class UPlayerAttributeSet;
 class UEnemyAttributeSet;
 class UWidgetComponent;
+class UBarWidget;
 
 UCLASS()
 class REVIEW_GAS_API AGasCharacter : public ACharacter, public IAbilitySystemInterface
@@ -21,6 +22,9 @@ public:
 	AGasCharacter();
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override { return AbilitySystemComponent; };
 
+	UFUNCTION(BlueprintCallable)
+	void SetHUDWidget(UBarWidget* InWidget);
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
@@ -29,7 +33,10 @@ protected:
 
 	// UI 업데이트용 콜백
 	void OnManaChange(const FOnAttributeChangeData& InData);
+	void OnMaxManaChange(const FOnAttributeChangeData& InData);
 	void OnHealthChange(const FOnAttributeChangeData& InData);
+
+	void OnMaxHealthChange(const FOnAttributeChangeData& InData);
 
 public:
 	UPROPERTY(EditAnywhere, Category = "GAS")
@@ -37,6 +44,11 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = "GAS")
 	TSubclassOf<class UGameplayEffect> DefaultAttributeEffect;
+
+protected:
+	// 플레이어 HUD 위젯 인스턴스를 저장할 변수
+	UPROPERTY()
+	TObjectPtr<class UBarWidget> PlayerHUDWidget;
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GAS")

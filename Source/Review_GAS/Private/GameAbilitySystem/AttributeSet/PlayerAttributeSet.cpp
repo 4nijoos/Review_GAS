@@ -15,7 +15,10 @@ void UPlayerAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute
 	Super::PreAttributeChange(Attribute, NewValue);
 	if (Attribute == GetManaAttribute())
 	{
-		NewValue = FMath::Clamp(NewValue, 0.0f, GetMaxMana());
+		if (GetMaxMana() > 0.0f)
+		{
+			NewValue = FMath::Clamp(NewValue, 0.0f, GetMaxMana());
+		}
 	}
 }
 
@@ -24,6 +27,6 @@ void UPlayerAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCall
 	Super::PostGameplayEffectExecute(Data);
 	if (Data.EvaluatedData.Attribute == GetManaAttribute())
 	{
-		SetMana(FMath::Clamp(GetMana(), 0.0f, GetMaxMana()));
+		//SetMana(FMath::Clamp(GetMana(), 0.0f, GetMaxMana()));
 	}
 }

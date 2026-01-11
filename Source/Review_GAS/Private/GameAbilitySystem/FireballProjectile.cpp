@@ -31,6 +31,8 @@ void AFireballProjectile::BeginPlay()
 
 void AFireballProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
+	UE_LOG(LogTemp, Error, TEXT("충돌 발생! 부딪힌 놈: %s"), *OtherActor->GetName());
+
 	if (OtherActor && OtherActor != GetInstigator())
 	{
 		UAbilitySystemComponent* TargetASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(OtherActor);
